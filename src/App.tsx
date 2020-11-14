@@ -2,8 +2,11 @@ import './App.scss';
 import * as React from 'react';
 import { useState } from 'react';
 import classnames from 'classnames';
+import { useFileLoader } from './useFileLoader';
 
 type NAV_DIRECTION = 'NONE' | 'FORWARD' | 'BACKWARD';
+
+const EMPTY_PLACEHOLDER = {content: [], path: []};
 
 const DIRECTION_TO_CLASS = {
   'NONE': undefined,
@@ -25,50 +28,26 @@ const FolderView = ({ onFileClicked, folder }: { onFileClicked: (string: string)
   )
 }
 
-const DIR1 = 'dir1';
-const DIR2 = 'dir2';
-const DIR3 = 'dir3';
-const DIR4 = 'dir4';
-const DIR5 = 'dir5';
-const DIR6 = 'dir6';
-const DIR7 = 'dir7';
-const DIR8 = 'dir8';
-const DIR9 = 'dir9';
-const DIR10 = 'dir10';
-
-const ROOT = '___root___';
-
-const EMPTY_PLACEHOLDER = '___empty_placeholder___';
 
 const Navigator = () => {
   //TODO: organize the directories in a linked-list or something similar
-  const folderContents = {
-    [EMPTY_PLACEHOLDER]: [],
-    [ROOT]: [DIR1],
-    [DIR1]: [DIR2, DIR4],
-    [DIR2]: [DIR3, DIR7],
-    [DIR3]: [DIR8, DIR9, DIR10],
-    [DIR4]: [DIR6, DIR5],
-  } as { [key: string]: string[] };
+  const { currentFolder, navigateBackFromCurrentFolder, longestNavigationStack, navigateToFolder } = useFileLoader();
 
-  const [currFolderPath, setCurrFolderPath] = useState([ROOT]);
+  const navigationStackWithPlaceholder = [...longestNavigationStack, EMPTY_PLACEHOLDER]; //TODO: can this be better..?
   const [direction, setDirection] = useState<NAV_DIRECTION>('NONE');
-  const [longestNavigatablePath, setLongestNavigatablePath] = useState(currFolderPath);
 
-  const onFileClicked = (dir: string) => {
-    const newPath = [...currFolderPath, dir];
-    setCurrFolderPath(newPath);
-    setLongestNavigatablePath([...newPath, EMPTY_PLACEHOLDER]);
+  const onFolderClicked = (folder: string) => {
+    navigateToFolder(folder)
     setDirection('FORWARD');
   }
 
   const onBackClicked = () => {
-    setCurrFolderPath(curr => ([...curr].reverse().slice(1).reverse()));
+    navigateBackFromCurrentFolder();
     setDirection('BACKWARD');
   }
 
-  const folderClass = (index: number) => {
-    const displayedIndex = currFolderPath.length - 1;
+  const folderClassAtIndex = (index: number) => {
+    const displayedIndex = currentFolder.path.length - 1;
     if(index === displayedIndex) {
       return 'current-folder';
     }
@@ -87,9 +66,9 @@ const Navigator = () => {
         <button onClick={onBackClicked}>BACK</button>
       </div>
       <div className={classnames("folders-container", DIRECTION_TO_CLASS[direction])}>
-        {longestNavigatablePath.map((folderKey, index) => (
-          <div className={folderClass(index)}>
-            <FolderView key={index} folder={folderContents[folderKey]} onFileClicked={onFileClicked} />
+        {navigationStackWithPlaceholder.map((folder, index) => (
+          <div className={folderClassAtIndex(index)}>
+            <FolderView key={index} folder={folder.content} onFileClicked={onFolderClicked} />
           </div>
         ))}
       </div>
