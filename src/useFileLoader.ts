@@ -52,14 +52,16 @@ export const useFileLoader = () => {
 
     const navigateToFolder = (folder: string) => {
         const currentFolder = longestNavigationStack.stack[longestNavigationStack.currentDepthIndex];
-        const newDepth = longestNavigationStack.currentDepthIndex + 1;
         if(currentFolder.folderFileListing.state !== 'loaded') {
             //TODO: handle
             throw new Error()
         }
-        const newCurrentFolder = loadedStaticFolderAtPath([...currentFolder.path, folder]);
-        const stack = newCurrentFolder.path.map((_, index) => loadedStaticFolderAtPath(newCurrentFolder.path.slice(0, index + 1)));
-        setLongestNavigationStack({stack, currentDepthIndex: newDepth});
+        setLongestNavigationStack(current => {
+            const newCurrentIndex = current.currentDepthIndex + 1;
+            const newCurrentFolder = loadedStaticFolderAtPath([...currentFolder.path, folder]);
+            const newStack = [...current.stack.slice(0, newCurrentIndex), newCurrentFolder];
+            return {currentDepthIndex: newCurrentIndex, stack: newStack};
+        })
     }
 
     const navigateBackFromCurrentFolder = () => {
